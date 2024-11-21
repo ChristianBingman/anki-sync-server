@@ -3,7 +3,7 @@ run-name: Build and Upload Image
 on: [push]
 jobs:
   container-build:
-    runs-on: christianbingman-com-runners
+    runs-on: anki-sync-server-runners
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
           name: flake.lock
           path: flake.lock
   container-push:
-    runs-on: christianbingman-com-runners
+    runs-on: anki-sync-server-runners
     needs: container-build
     steps:
       - name: Download container tar
