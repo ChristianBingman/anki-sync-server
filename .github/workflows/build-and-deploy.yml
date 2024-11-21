@@ -58,3 +58,32 @@ jobs:
       - name: Push production image
         if: github.ref_type == 'tag'
         run: "docker push cbingman/anki-sync-server:$GITHUB_REF_NAME-$REV"
+  update-chart:
+    runs-on: anki-sync-server-runners
+    needs: container-build
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Download flake lock
+        uses: actions/download-artifact@v4
+        with:
+          name: flake.lock
+      - name: Checkout helm repo
+        uses: actions/checkout@v4
+        with:
+          repository: ChristianBingman/anki-sync-server-chart
+          token: ${{ secrets.HELM_PAT }}
+          ref: main
+          path: chart
+      - name: Setup env
+        run: |
+          REV=$(jq -r .nodes.nixpkgs.locked.rev flake.lock)
+          echo "COMMIT_TAG=$GITHUB_REF_NAME-$REV" >> "$GITHUB_ENV"
+      - name: Update int environment
+        run: |
+          cd chart
+          sed -i -e "s/appVersion: .*$/appVersion: \"$COMMIT_TAG\"/g" Chart.yaml
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR_ID+$GITHUB_ACTOR@users.noreply.github.com"
+          git add int.yaml
+          git commit -m "Deploy [prod]"
+          git push
